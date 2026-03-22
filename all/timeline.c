@@ -4,16 +4,24 @@
 
 void render_timeline(SDL_Renderer *ren, TTF_Font *font, interrupt_t *history, int count, int offset) {
     int start_x = 80;   
+    int screen_w = 1280; 
+    int end_x = 1250;    
     int base_y = 350;   
     int tick_w = 40;    
     int row_h = 60;     
-    int accumulated_ticks = 0; 
 
-    // 1. 가이드라인 및 우선순위 라벨 (배경 고정)
-    for (int i = 0; i < 5; i++) {
+    // 데이터 끝을 화면 90% 지점에 맞추기 위한 계산
+    int target_x = (int)(screen_w * 0.9); 
+    int total_data_w = 0;
+    for (int i = 0; i < count; i++) total_data_w += (history[i].running_time * tick_w);
+    
+    int timeline_base_x = target_x - total_data_w - offset;
+
+    // 1. 가이드라인 및 P0~P4 라벨 (배경 고정)
+    for (int i = 0; i <= 4; i++) {
         int y = base_y - (i * row_h);
         SDL_SetRenderDrawColor(ren, 50, 50, 55, 255);
-        SDL_RenderDrawLine(ren, start_x, y + 25, 1250, y + 25);
+        SDL_RenderDrawLine(ren, start_x, y + 25, end_x, y + 25);
         
         char p_label[10];
         sprintf(p_label, "P%d", i);
@@ -21,42 +29,54 @@ void render_timeline(SDL_Renderer *ren, TTF_Font *font, interrupt_t *history, in
         draw_text_centered(ren, font, p_label, label_rect, (SDL_Color){150, 150, 150, 255});
     }
 
-    // 2. 하단 시간 축 숫자 표시 (Time Axis - 스크롤 적용)
-    int temp_ticks = 0;
-    for (int i = 0; i <= count; i++) {
-        int num_x = start_x + (temp_ticks * tick_w) - offset;
-        
-        if (num_x >= start_x && num_x < 1250) {
+    // 2. 시간 축 및 블록 렌더링
+    int current_x = timeline_base_x;
+    // 경고가 났던 변수를 여기서 블록의 시간 정보를 누적하며 활용합니다.
+    int time_counter = 0; 
+
+    for (int i = 0; i < count; i++) {
+        int block_w = history[i].running_time * tick_w;
+        int block_y = base_y - (history[i].priority * row_h);
+
+        // 시간 축 숫자 (블록 시작점 기준)
+        if (current_x >= start_x && current_x < end_x) {
             char time_buf[16];
-            sprintf(time_buf, "%d", temp_ticks);
-            SDL_Rect time_rect = { num_x - 15, base_y + 45, 30, 20 };
+            sprintf(time_buf, "%d", time_counter);
+            SDL_Rect time_rect = { current_x - 15, base_y + 45, 30, 20 };
             draw_text_centered(ren, font, time_buf, time_rect, (SDL_Color){130, 130, 140, 255});
             
             SDL_SetRenderDrawColor(ren, 100, 100, 110, 255);
-            SDL_RenderDrawLine(ren, num_x, base_y + 30, num_x, base_y + 40);
+            SDL_RenderDrawLine(ren, current_x, base_y + 30, current_x, base_y + 40);
         }
-        if (i < count) temp_ticks += history[i].running_time;
-    }
 
-    // 3. 인터럽트 블록 렌더링 (스크롤 적용)
-    accumulated_ticks = 0;
-    for (int i = 0; i < count; i++) {
-        int block_x = start_x + (accumulated_ticks * tick_w) - offset;
-        int block_w = history[i].running_time * tick_w;
-        int block_y = base_y - (history[i].priority * row_h);
-        
-        if (block_x + block_w > start_x && block_x < 1250) {
-            SDL_Rect rect = { block_x, block_y, block_w - 2, 50 };
+        // 블록 그리기
+        if (current_x + block_w > start_x && current_x < end_x) {
+            int draw_x = (current_x < start_x) ? start_x : current_x;
+            int draw_w = (current_x < start_x) ? (block_w - (start_x - current_x)) : block_w;
+            if (draw_x + draw_w > end_x) draw_w = end_x - draw_x;
+
+            SDL_Rect rect = { draw_x, block_y, draw_w - 2, 50 };
             set_priority_color(ren, history[i].priority);
             SDL_RenderFillRect(ren, &rect);
-            
             SDL_SetRenderDrawColor(ren, 255, 255, 255, 255);
             SDL_RenderDrawRect(ren, &rect);
 
-            char info[128];
-            sprintf(info, "%s (%d)", history[i].irq_case, history[i].running_time);
-            draw_text_centered(ren, font, info, rect, (SDL_Color){255, 255, 255, 255});
+            if (draw_w > 40) {
+                char info[128];
+                sprintf(info, "%s", history[i].irq_case);
+                draw_text_centered(ren, font, info, rect, (SDL_Color){255, 255, 255, 255});
+            }
         }
-        accumulated_ticks += history[i].running_time;
+        
+        current_x += block_w;
+        time_counter += history[i].running_time;
+    }
+
+    // 마지막 시간 표시 (데이터 끝 지점)
+    if (current_x >= start_x && current_x < end_x) {
+        char time_buf[16];
+        sprintf(time_buf, "%d", time_counter);
+        SDL_Rect time_rect = { current_x - 15, base_y + 45, 30, 20 };
+        draw_text_centered(ren, font, time_buf, time_rect, (SDL_Color){130, 130, 140, 255});
     }
 }
