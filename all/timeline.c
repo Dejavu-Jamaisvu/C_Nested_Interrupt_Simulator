@@ -17,7 +17,7 @@ void render_timeline(SDL_Renderer *ren, TTF_Font *font, interrupt_t *history, in
     
     int timeline_base_x = target_x - total_data_w - offset;
 
-    // 1. 가이드라인 및 P0~P4 라벨 (배경 고정)
+    // 1. 가이드라인 및 P0~P4 라벨
     for (int i = 0; i <= 4; i++) {
         int y = base_y - (i * row_h);
         SDL_SetRenderDrawColor(ren, 50, 50, 55, 255);
@@ -31,14 +31,13 @@ void render_timeline(SDL_Renderer *ren, TTF_Font *font, interrupt_t *history, in
 
     // 2. 시간 축 및 블록 렌더링
     int current_x = timeline_base_x;
-    // 경고가 났던 변수를 여기서 블록의 시간 정보를 누적하며 활용합니다.
     int time_counter = 0; 
 
     for (int i = 0; i < count; i++) {
         int block_w = history[i].running_time * tick_w;
         int block_y = base_y - (history[i].priority * row_h);
 
-        // 시간 축 숫자 (블록 시작점 기준)
+        // 시간 축 숫자
         if (current_x >= start_x && current_x < end_x) {
             char time_buf[16];
             sprintf(time_buf, "%d", time_counter);
@@ -61,10 +60,21 @@ void render_timeline(SDL_Renderer *ren, TTF_Font *font, interrupt_t *history, in
             SDL_SetRenderDrawColor(ren, 255, 255, 255, 255);
             SDL_RenderDrawRect(ren, &rect);
 
-            if (draw_w > 40) {
-                char info[128];
-                sprintf(info, "%s", history[i].irq_case);
-                draw_text_centered(ren, font, info, rect, (SDL_Color){255, 255, 255, 255});
+            // [수정] 블록 내부 텍스트 표시
+            // 경고 방지를 위해 버퍼를 128로 확장
+            if (draw_w > 70) {
+                char line1[128], line2[64];
+                sprintf(line1, "%s", history[i].irq_case);
+                sprintf(line2, "(%dms)", history[i].running_time);
+
+                SDL_Rect t_rect = { rect.x, rect.y + 5, rect.w, 20 };
+                SDL_Rect b_rect = { rect.x, rect.y + 25, rect.w, 20 };
+                
+                draw_text_centered(ren, font, line1, t_rect, (SDL_Color){255, 255, 255, 255});
+                draw_text_centered(ren, font, line2, b_rect, (SDL_Color){255, 255, 255, 255});
+            } 
+            else if (draw_w > 30) {
+                draw_text_centered(ren, font, history[i].irq_case, rect, (SDL_Color){255, 255, 255, 255});
             }
         }
         
@@ -72,7 +82,7 @@ void render_timeline(SDL_Renderer *ren, TTF_Font *font, interrupt_t *history, in
         time_counter += history[i].running_time;
     }
 
-    // 마지막 시간 표시 (데이터 끝 지점)
+    // 마지막 시간 표시
     if (current_x >= start_x && current_x < end_x) {
         char time_buf[16];
         sprintf(time_buf, "%d", time_counter);
