@@ -43,14 +43,18 @@ void render_queue(SDL_Renderer *ren, TTF_Font *font, priority_queue_t *pq) {
 
     // 2. 노드 그리기
     for (int i = 0; i < pq->size; i++) {
-        SDL_Rect node_rect = { node_x[i] - 40, node_y[i] - 25, 80, 45 };
-        SDL_SetRenderDrawColor(ren, 50, 120, 90, 255); // 힙 노드 색상
+        SDL_Rect node_rect = { node_x[i] - 45, node_y[i] - 22, 90, 45 };
+        
+        set_priority_color(ren, pq->data[i].priority); // 공통 함수 호출
         SDL_RenderFillRect(ren, &node_rect);
+        
         SDL_SetRenderDrawColor(ren, 255, 255, 255, 255);
         SDL_RenderDrawRect(ren, &node_rect);
 
-        char buf[50];
-        sprintf(buf, "P%d:%s", pq->data[i].priority, pq->data[i].irq_case);
-        draw_text_centered(ren, font, buf, node_rect, (SDL_Color){255,255,255,255});
+        char buf[128];
+        // "P우선순위:이름 (시간)" 형식으로 출력
+        sprintf(buf, "P%d:%s (%d)", pq->data[i].priority, pq->data[i].irq_case, pq->data[i].running_time);
+        draw_text_centered(ren, font, buf, node_rect, (SDL_Color){255, 255, 255, 255});
+        
     }
 }
