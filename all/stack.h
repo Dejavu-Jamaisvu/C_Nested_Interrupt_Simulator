@@ -1,4 +1,6 @@
-// stack.h
+#ifndef STACK_H
+#define STACK_H
+
 #include "common.h"
 
 typedef struct _nested_stack {
@@ -10,4 +12,7 @@ typedef struct _nested_stack {
     int data_count;
 } nested_stack_t;
 
-void render_stack(SDL_Renderer *ren, TTF_Font *font, nested_stack_t *ns);
+// [수정] 마지막에 int offset_y 인자를 추가합니다.
+void render_stack(SDL_Renderer *ren, TTF_Font *font, nested_stack_t *ns, int offset_y);
+
+#endif
