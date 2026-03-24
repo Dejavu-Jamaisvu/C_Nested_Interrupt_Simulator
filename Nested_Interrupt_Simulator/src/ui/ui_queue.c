@@ -14,7 +14,7 @@ void render_priority_queue(SDL_Renderer* renderer, TTF_Font* font, priority_queu
 
     SDL_Rect title_box = { 480, 460, 1050, 30 };
     SDL_Color cyan_color = {100, 255, 255, 255};
-    draw_text_centered(renderer, font, "PRIORITY QUEUE (MAX-HEAP TREE)", title_box, cyan_color);
+    draw_text_centered(renderer, font, "PRIORITY QUEUE (MIN-HEAP TREE)", title_box, cyan_color);
 
     if (queue_instance->current_size <= 0) {
         return;
